@@ -1,8 +1,12 @@
 function Observer(object){
     var keys = Object.keys(object),
-        data = {}
 
+    this.data = {}
     keys.forEach(function(key){
+        var val = object[key]
+        if(typeof val === 'object'){
+            new Observer(val)
+        }
         var privateKey = '__'  + key
         data[privateKey] = object[key]
         Object.defineProperty(data,key,{
@@ -17,5 +21,4 @@ function Observer(object){
         })
     })
 
-    return {data:data}
 }

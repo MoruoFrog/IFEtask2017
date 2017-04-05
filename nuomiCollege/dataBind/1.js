@@ -6,10 +6,11 @@ function Observer(object){
     keys.forEach(function(key){
         var val = object[key]
         if(typeof val === 'object'){
-            new Observer(val)
+           object[key] = new Observer(val)
         }
         var privateKey = '__'  + key
         that.data[privateKey] = object[key]
+        console.log(key,that.data)
         Object.defineProperty(that.data,key,{
             enumerable : true,
             configurable : true,

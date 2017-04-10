@@ -1,22 +1,22 @@
-function Observer(data){
+function Observer(data,parentKey,parentObj){
     this.data = data
     this.data.publisher = data.publisher || {}
     Object.defineProperty(data,'publisher',{
         enumerable : false,
         configurable : true,
     })
-    this.convert(data)
+    this.convert(data,parentKey,parentObj)
 }
 
 let p = Object.prototype
 
-p.convert = function(data){
+p.convert = function(data,parentKey,parentObj){
     for(let key in data){
         let val
         if(data.hasOwnProperty(key)){
             val = data[key]
             if(typeof val === 'object'){
-                new Observer(val)
+                new Observer(val,key,data)
             }
 
             Object.defineProperty(data,key,{
@@ -36,6 +36,11 @@ p.convert = function(data){
                         publisher.forEach(function(fun){
                             fun(newValue,val)
                         })
+                    }
+                    if(parentObj && !parentObj.data){
+                        parentObj[parentKey] = data
+                    }else{
+                        parentObj.data[parentKey] = data
                     }
                     val = newValue
                 }

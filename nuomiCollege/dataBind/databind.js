@@ -1,7 +1,7 @@
 function Observer(data,parentKey,parentObj){
     this.data = data
-    this.data.publisher = data.publisher || {}
-    Object.defineProperty(data,'publisher',{
+    this.data.subscriber = data.subscriber || {
+    Object.defineProperty(data,'subscriber',{
         enumerable : false,
         configurable : true,
     })
@@ -18,43 +18,52 @@ p.convert = function(data,parentKey,parentObj){
             if(typeof val === 'object'){
                 new Observer(val,key,data)
             }
-
-            Object.defineProperty(data,key,{
-                enumerable : true,
-                configurable : true,
-                get : function(){
-                    console.log("你访问了" + key)
-                    return val
-                },
-                set : function(newValue){
-                    if(typeof newValue === 'object'){
-                        new Observer(newValue)
-                    }
-                    let publisher = this.publisher[key]
-                    console.log("你修改了" + key + "新的值为" + newValue)
-                    if(publisher){
-                        publisher.forEach(function(fun){
-                            fun(newValue,val)
-                        })
-                    }
-                    if(parentObj && !parentObj.data){
-                        parentObj[parentKey] = data
-                    }else{
-                        parentObj.data[parentKey] = data
-                    }
-                    val = newValue
-                }
-            })
+            this.defineGetterAndSetter(data,key,val,parentKey,parentObj)
         }
     }
 }
+var arrayMethod = ['push','pop','shift','unshift','sort','reverse']
+var arrayWatch = {}
+arrayMethod.forEach(method => {
+  var origin = Array.prototype[method]
+  arrayMethod[method] = function(){
+    this.watcher.forEach(fun => fun())
+    return origin.apply(this,arguments)
+  }
+})
+p.defineGetterAndSetter = function(data,key,parentKey,parentObj){
+  Object.defineProperty(data,key,{
+      enumerable : true,
+      configurable : true,
+      get : function(){
+          return val
+      },
+      set : function(newValue){
+          if(typeof newValue === 'object'){
+              new Observer(newValue)
+          }
+          let subscriber = this.subscriber[key]
+          if(subscriber){
+              subscriber.forEach(function(fun){
+                  fun(newValue,val)
+              })
+          }
+          if(parentObj && !parentObj.data){
+              parentObj[parentKey] = data
+          }else{
+              parentObj.data[parentKey] = data
+          }
+          val = newValue
+      }
+  })
+}
 
 p.$watch = function(key,fun){
-    let pub,obj
+    let sub,obj
     obj = this.data || this
-    pub = obj.publisher[key] || [] 
-    if(pub.length === 0){
-        obj.publisher[key] = pub
+    sub = obj.subscriber[key] || []
+    if(sub.length === 0){
+        obj.subscriber[key] = sub
     }
-    pub.push(fun)
+    sub.push(fun)
 }

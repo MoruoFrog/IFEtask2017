@@ -1,6 +1,6 @@
 function Observer(data,parentKey,parentObj){
     this.data = data
-    this.data.subscriber = data.subscriber || {
+    this.data.subscriber = data.subscriber || {}
     Object.defineProperty(data,'subscriber',{
         enumerable : false,
         configurable : true,
@@ -31,7 +31,12 @@ arrayMethod.forEach(method => {
     return origin.apply(this,arguments)
   }
 })
-p.defineGetterAndSetter = function(data,key,parentKey,parentObj){
+p.defineGetterAndSetter = function(data,key,val,parentKey,parentObj){
+  if(Array.isArray(data)) {
+    data.__proto__ = arrayMethod
+    return
+  }
+
   Object.defineProperty(data,key,{
       enumerable : true,
       configurable : true,
@@ -48,9 +53,9 @@ p.defineGetterAndSetter = function(data,key,parentKey,parentObj){
                   fun(newValue,val)
               })
           }
-          if(parentObj && !parentObj.data){
+          if(parentObj && !parentObj.data) {
               parentObj[parentKey] = data
-          }else{
+          }else if(parentObj && parentObj.data) {
               parentObj.data[parentKey] = data
           }
           val = newValue
@@ -59,8 +64,16 @@ p.defineGetterAndSetter = function(data,key,parentKey,parentObj){
 }
 
 p.$watch = function(key,fun){
-    let sub,obj
+    let sub,obj,target
+
     obj = this.data || this
+    target = obj[key]
+    if(Array.isArray(target)){
+      let watcher = target.watcher || []
+      target.watcher = watcher
+      watcher.push(fun)
+      return
+    }
     sub = obj.subscriber[key] || []
     if(sub.length === 0){
         obj.subscriber[key] = sub
